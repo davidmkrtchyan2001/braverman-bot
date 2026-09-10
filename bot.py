@@ -369,6 +369,23 @@ async def main():
             "(см. .env.example) перед запуском."
         )
 
+    # Диагностика: какой шрифт для картинки-результата реально нашёлся
+    # на этом сервере (помогает понять, почему текст на PNG "квадратиками").
+    from image_card import _BOLD_PATH, _REGULAR_PATH, _THIS_DIR
+
+    log.info("image_card: рабочая директория = %s", _THIS_DIR)
+    log.info("image_card: обычный шрифт = %s", _REGULAR_PATH)
+    log.info("image_card: жирный шрифт = %s", _BOLD_PATH)
+    try:
+        log.info("image_card: содержимое директории = %s", os.listdir(_THIS_DIR))
+        fonts_dir = os.path.join(_THIS_DIR, "fonts")
+        if os.path.isdir(fonts_dir):
+            log.info("image_card: содержимое fonts/ = %s", os.listdir(fonts_dir))
+        else:
+            log.info("image_card: папки fonts/ не существует")
+    except Exception:
+        log.exception("image_card: не удалось прочитать директорию")
+
     global BOT_USERNAME
 
     bot = Bot(token=BOT_TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
