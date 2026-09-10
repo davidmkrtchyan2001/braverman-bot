@@ -28,14 +28,19 @@ CATEGORY_COLOR = {
     "serotonin": (255, 205, 90),    # жёлтый/золотой — настроение/солнце
 }
 
-# Ищем подходящий шрифт с кириллицей и на Windows (локальная разработка),
-# и на Linux-сервере (Railway и т.п., где ставим DejaVu через nixpacks.toml).
+# Шрифт с поддержкой кириллицы лежит прямо в репозитории (fonts/) —
+# так он гарантированно доступен на любом хостинге (Railway и т.п.),
+# без зависимости от того, что установлено в системе. Системные пути
+# оставлены как запасной вариант для локальной разработки.
+_THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 _REGULAR_CANDIDATES = [
+    os.path.join(_THIS_DIR, "fonts", "PTSans-Regular.ttf"),
     r"C:\Windows\Fonts\segoeui.ttf",
     "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
     "/usr/share/fonts/dejavu/DejaVuSans.ttf",
 ]
 _BOLD_CANDIDATES = [
+    os.path.join(_THIS_DIR, "fonts", "PTSans-Bold.ttf"),
     r"C:\Windows\Fonts\segoeuib.ttf",
     "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
     "/usr/share/fonts/dejavu/DejaVuSans-Bold.ttf",
@@ -69,6 +74,7 @@ F_PCT = _font(_BOLD_PATH, 44)
 F_STATUS = _font(_REGULAR_PATH, 30)
 F_FOOTER = _font(_BOLD_PATH, 36)
 F_FOOTER_SMALL = _font(_REGULAR_PATH, 28)
+F_HINT = _font(_REGULAR_PATH, 24)
 
 
 def _vertical_gradient(size, top, bottom):
@@ -100,10 +106,12 @@ def generate_result_image(percentages: dict, bot_username: str) -> bytes:
     draw.text((W / 2, 140), title, font=F_TITLE, fill=WHITE, anchor="mm")
     subtitle = "Мой профиль нейромедиаторов"
     draw.text((W / 2, 210), subtitle, font=F_SUBTITLE, fill=MUTED, anchor="mm")
+    hint = "Чем МЕНЬШЕ % — тем лучше (меньше признаков нехватки)"
+    draw.text((W / 2, 254), hint, font=F_HINT, fill=MUTED, anchor="mm")
 
     # карточка-подложка
-    card_x0, card_y0 = 70, 300
-    card_x1, card_y1 = W - 70, 300 + 1150
+    card_x0, card_y0 = 70, 320
+    card_x1, card_y1 = W - 70, 320 + 1150
     draw.rounded_rectangle(
         [card_x0, card_y0, card_x1, card_y1], radius=48, fill=(255, 255, 255, 22)
     )
@@ -141,7 +149,7 @@ def generate_result_image(percentages: dict, bot_username: str) -> bytes:
     footer_y = card_y1 + 90
     draw.text(
         (W / 2, footer_y),
-        "Пройди тест бесплатно ↓",
+        "Пройди тест бесплатно в Telegram:",
         font=F_FOOTER_SMALL,
         fill=MUTED,
         anchor="mm",
