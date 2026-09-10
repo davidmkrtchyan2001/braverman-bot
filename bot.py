@@ -72,9 +72,11 @@ class TestState(StatesGroup):
     running = State()
 
 
-def answer_keyboard() -> InlineKeyboardMarkup:
+def answer_keyboard(idx: int) -> InlineKeyboardMarkup:
+    # idx "вшит" в callback_data, чтобы случайный тап по кнопке СТАРОГО
+    # (уже отвеченного) вопроса не засчитывался как ответ на текущий.
     buttons = [
-        [InlineKeyboardButton(text=label, callback_data=f"ans:{value}")]
+        [InlineKeyboardButton(text=label, callback_data=f"ans:{value}:{idx}")]
         for label, value in SCALE_LABELS
     ]
     return InlineKeyboardMarkup(inline_keyboard=buttons)
@@ -148,7 +150,7 @@ async def ask_question(message: Message, state: FSMContext, bot: Bot | None = No
         f"{bar}  {idx + 1}/{total}\n\n"
         f"<b>{question_text}</b>\n\n"
         "<i>Как часто это про тебя? Выбери один из вариантов ниже 👇</i>",
-        reply_markup=answer_keyboard(),
+        reply_markup=answer_keyboard(idx),
     )
 
 
@@ -269,12 +271,27 @@ async def start_test(callback: CallbackQuery, state: FSMContext, bot: Bot):
 
 @router.callback_query(TestState.running, F.data.startswith("ans:"))
 async def handle_answer(callback: CallbackQuery, state: FSMContext, bot: Bot):
-    value = int(callback.data.split(":")[1])
+    parts = callback.data.split(":")
+    value = int(parts[1])
+    btn_idx = int(parts[2]) if len(parts) > 2 else None
 
     data = await state.get_data()
     order = data["order"]
     idx = data["idx"]
     scores = data["scores"]
+
+    # Кнопка относится не к текущему вопросу (например, тапнули по
+    # старому сообщению выше в чате) — игнорируем, не засчитываем.
+    if btn_idx is not None and btn_idx != idx:
+        await callback.answer(
+            "Это старый вопрос — ответь на текущий, он ниже 👇",
+            show_alert=True,
+        )
+        try:
+            await callback.message.edit_reply_markup(reply_markup=None)
+        except Exception:
+            pass
+        return
 
     q_index = order[idx]
     _, category = QUESTIONS[q_index]
@@ -327,6 +344,15 @@ async def main():
     me = await bot.get_me()
     BOT_USERNAME = me.username
     log.info("Бот запущен: @%s", BOT_USERNAME)
+
+    # Для бесплатных хостингов типа Replit, которые "усыпляют" процесс
+    # без открытого порта. Включается переменной окружения KEEP_ALIVE=1
+    # (на Railway/VPS не нужно — там ничего не заснёт).
+    if os.getenv("KEEP_ALIVE") == "1":
+        from keep_alive import keep_alive
+
+        keep_alive(int(os.getenv("PORT", "8080")))
+        log.info("keep_alive сервер запущен")
 
     # На случай непредвиденных сетевых обрывов не даём процессу упасть
     # насовсем — перезапускаем polling с небольшой паузой.
