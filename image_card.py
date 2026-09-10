@@ -35,12 +35,14 @@ CATEGORY_COLOR = {
 _THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 _REGULAR_CANDIDATES = [
     os.path.join(_THIS_DIR, "fonts", "PTSans-Regular.ttf"),
+    os.path.join(_THIS_DIR, "PTSans-Regular.ttf"),  # на случай, если папка "расплющилась" при загрузке
     r"C:\Windows\Fonts\segoeui.ttf",
     "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
     "/usr/share/fonts/dejavu/DejaVuSans.ttf",
 ]
 _BOLD_CANDIDATES = [
     os.path.join(_THIS_DIR, "fonts", "PTSans-Bold.ttf"),
+    os.path.join(_THIS_DIR, "PTSans-Bold.ttf"),
     r"C:\Windows\Fonts\segoeuib.ttf",
     "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
     "/usr/share/fonts/dejavu/DejaVuSans-Bold.ttf",
