@@ -33,6 +33,7 @@ from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.fsm.storage.memory import MemoryStorage
 from aiogram.types import (
+    BotCommand,
     BufferedInputFile,
     CallbackQuery,
     ErrorEvent,
@@ -238,21 +239,38 @@ async def finish_test(message: Message, state: FSMContext, bot: Bot | None = Non
 @router.message(CommandStart())
 async def cmd_start(message: Message, state: FSMContext, bot: Bot):
     await state.clear()
+
     await bot.send_chat_action(message.chat.id, ChatAction.TYPING)
-    await asyncio.sleep(0.4)
+    await asyncio.sleep(0.5)
     await message.answer(
         "✨ <b>Тест Бравермана</b>\n"
         "━━━━━━━━━━━━━━━\n\n"
-        "Привет! 👋 Этот тест поможет понять, каких веществ тебе "
-        "сейчас может не хватать — по четырём направлениям:\n\n"
+        "Привет! 👋 Рад(а) тебя видеть.\n\n"
+        "В 1990-х американский врач <b>Эрик Браверман</b> заметил: "
+        "за нашей энергией, настроением, памятью и спокойствием стоят "
+        "четыре ключевых нейромедиатора — вещества, которые мозг "
+        "вырабатывает сам. Когда одного из них не хватает, это "
+        "проявляется в повседневных мелочах: усталость без причины, "
+        "тревожность, рассеянность, апатия.\n\n"
+        "Браверман разработал тест по симптомам, чтобы понять, "
+        "<b>какого именно вещества тебе сейчас не хватает больше "
+        "всего</b> — и что конкретно можно с этим сделать."
+    )
+
+    await bot.send_chat_action(message.chat.id, ChatAction.TYPING)
+    await asyncio.sleep(0.9)
+    await message.answer(
+        "Тест смотрит на четыре направления:\n\n"
         "⚡️ <b>Дофамин</b> — энергия и мотивация\n"
         "🧩 <b>Ацетилхолин</b> — память и фокус\n"
         "🌿 <b>ГАМК</b> — спокойствие\n"
         "☀️ <b>Серотонин</b> — настроение и сон\n\n"
-        f"🕐 {len(QUESTIONS)} вопросов, ~5-7 минут. Отвечай честно, "
-        "по первому впечатлению — так результат будет точнее.\n\n"
+        f"🕐 {len(QUESTIONS)} вопросов, ~5-7 минут. Отвечай честно и "
+        "по первому впечатлению, не задумываясь надолго — так результат "
+        "будет точнее.\n\n"
         "⚠️ <i>Это ознакомительный тест, а не медицинская диагностика. "
-        "Перед приёмом БАДов и добавок консультируйтесь с врачом.</i>",
+        "Перед приёмом БАДов и добавок консультируйтесь с врачом.</i>\n\n"
+        "Желаю приятного прохождения — заодно немного узнаешь себя 🙂",
         reply_markup=start_keyboard(),
     )
 
@@ -320,6 +338,22 @@ async def handle_stale_answer(callback: CallbackQuery):
     )
 
 
+@router.message(TestState.running)
+async def ignore_text_during_test(message: Message):
+    # Пользователь написал текст вместо нажатия на кнопку — напоминаем.
+    await message.answer("Пожалуйста, выбери один из вариантов кнопками выше 👆")
+
+
+@router.message()
+async def fallback_message(message: Message):
+    # Любое сообщение вне теста (не команда /start) — не даём чату
+    # выглядеть "мёртвым": подсказываем, что нажать.
+    await message.answer(
+        "Привет! 👋 Чтобы начать тест, нажми кнопку ниже или отправь /start.",
+        reply_markup=start_keyboard(),
+    )
+
+
 @router.errors()
 async def on_error(event: ErrorEvent):
     log.exception(
@@ -344,6 +378,12 @@ async def main():
     me = await bot.get_me()
     BOT_USERNAME = me.username
     log.info("Бот запущен: @%s", BOT_USERNAME)
+
+    # Меню команд (значок "/" рядом с полем ввода в Telegram) — иначе
+    # новый пользователь видит пустой чат без единой подсказки.
+    await bot.set_my_commands(
+        [BotCommand(command="start", description="Начать тест Бравермана")]
+    )
 
     # Для бесплатных хостингов типа Replit, которые "усыпляют" процесс
     # без открытого порта. Включается переменной окружения KEEP_ALIVE=1
