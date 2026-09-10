@@ -1,0 +1,5 @@
+# Для картинки-результата (image_card.py) нужен шрифт с поддержкой
+# кириллицы на сервере (Linux). Ставим открытый DejaVu через apt на
+# этапе сборки Railway/Nixpacks.
+[phases.setup]
+aptPkgs = ["fonts-dejavu-core"]
